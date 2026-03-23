@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#10b981">
+    <meta name="description" content="Stat - personal and business finance management app">
+    <title>Stat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <h1>📊 Stat</h1>
+            <div class="mode-switch">
+                <button class="mode-btn active" data-mode="personal">
+                    🏠 Personal
+                </button>
+                <button class="mode-btn" data-mode="business">
+                    💼 Business
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="transactions">
+                📋 Transactions
+            </button>
+            <button class="tab-btn" data-tab="stats">
+                📊 Statistics
+            </button>
+            <button class="tab-btn" data-tab="import">
+                📁 Import
+            </button>
+            <button class="tab-btn" data-tab="settings">
+                ⚙️ Settings
+            </button>
+        </nav>
+
+        <!-- Stats Summary Bar (shown on all tabs) -->
+        <div class="stats-summary" id="statsSummary">
+            <div class="stat-card">
+                <span class="stat-label">Balance</span>
+                <span class="stat-value" id="balanceAmount">€0.00</span>
+            </div>
+            <div class="stat-card income">
+                <span class="stat-label">Income</span>
+                <span class="stat-value" id="incomeAmount">€0.00</span>
+            </div>
+            <div class="stat-card expense">
+                <span class="stat-label">Expense</span>
+                <span class="stat-value" id="expenseAmount">€0.00</span>
+            </div>
+        </div>
+
+        <!-- Transactions Tab -->
+        <div id="transactionsTab" class="tab-content active">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>📅 From Date</label>
+                    <input type="date" id="filterDateFrom">
+                </div>
+                <div class="filter-group">
+                    <label>📅 To Date</label>
+                    <input type="date" id="filterDateTo">
+                </div>
+                <div class="filter-group">
+                    <label>🏷️ Type</label>
+                    <select id="filterType">
+                        <option value="all">All</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>📂 Category</label>
+                    <select id="filterCategory">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <button id="clearFilters" class="btn-secondary">🗑️ Clear Filters</button>
+            </div>
+
+            <div class="actions">
+                <button id="addTransactionBtn" class="btn-primary">➕ Add Transaction</button>
+                <button id="exportJsonBtn" class="btn-secondary">💾 Export JSON</button>
+            </div>
+
+            <div class="transactions-list" id="transactionsList">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="statsTab" class="tab-content">
+            <div class="stats-filters">
+                <select id="statsYear"></select>
+                <button id="refreshStats" class="btn-primary">Refresh</button>
+            </div>
+            <div id="statsContent">
+                <div class="stats-cards" id="monthlyStats"></div>
+                <div class="category-stats" id="categoryStats"></div>
+            </div>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="importTab" class="tab-content">
+            <div class="import-area">
+                <h3>📁 File Import</h3>
+                <p>Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+                <button id="importBtn" class="btn-primary" disabled>Import</button>
+                <div id="importPreview" class="import-preview"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settingsTab" class="tab-content">
+            <div class="settings-section">
+                <h3>💾 Data Management</h3>
+                <button id="backupBtn" class="btn-secondary">📀 Full Backup (JSON)</button>
+                <button id="restoreBtn" class="btn-secondary">🔄 Restore from Backup</button>
+                <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                <button id="clearAllDataBtn" class="btn-danger">⚠️ Delete All Data</button>
+            </div>
+            <div class="settings-section">
+                <h3>🏷️ Categories</h3>
+                <div id="categoriesList"></div>
+                <div class="add-category">
+                    <input type="text" id="newCategoryName" placeholder="New category name">
+                    <select id="newCategoryType">
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <button id="addCategoryBtn" class="btn-primary">➕ Add</button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>ℹ️ About</h3>
+                <p>Version: 1.0.0</p>
+                <p>All data is stored locally on your device</p>
+            </div>
+        </div>
+
+        <!-- Add/Edit Transaction Modal -->
+        <div id="transactionModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3 id="modalTitle">New Transaction</h3>
+                <form id="transactionForm">
+                    <input type="hidden" id="transactionId">
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="transactionDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <select id="transactionType" required>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount *</label>
+                        <input type="number" id="transactionAmount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="transactionCategory" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="transactionDescription" rows="2"></textarea>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-primary">Save</button>
+                        <button type="button" id="cancelModalBtn" class="btn-secondary">Cancel</button>
+                    </div>
+                </form>
+                <button id="deleteTransactionBtn" class="btn-danger" style="display: none;">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="libs/papaparse.min.js"></script>
+    <script src="libs/xlsx.full.min.js"></script>
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered:', reg))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>

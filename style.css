@@ -20,21 +20,50 @@ body {
 header {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
-    padding: 20px;
+    padding: 18px 16px;
     border-radius: 20px;
     margin-bottom: 20px;
     text-align: center;
-}
-
-header h1 {
-    font-size: 1.8rem;
-    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
 }
 
 .mode-switch {
     display: flex;
     gap: 10px;
     justify-content: center;
+    width: 100%;
+    max-width: 420px;
+}
+
+.bank-switch {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.bank-switch label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white;
+    padding-left: 6px;
+}
+
+.bank-switch select {
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 16px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.96);
+    color: #1f2937;
+    outline: none;
 }
 
 .mode-btn {
@@ -119,6 +148,35 @@ header h1 {
 
 .stat-card.expense .stat-value {
     color: #ef4444;
+}
+
+/* Overview Cards */
+.overview-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.overview-card {
+    background: white;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.overview-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.overview-value {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111827;
 }
 
 /* Tab Content */
@@ -383,6 +441,60 @@ header h1 {
     border-bottom: 1px solid #f3f4f6;
 }
 
+.category-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-item.archived {
+    opacity: 0.65;
+}
+
+.category-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.category-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.category-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.category-badge.default {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.category-badge.archived {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
 /* Import Preview */
 .import-area {
     background: white;
@@ -413,6 +525,19 @@ header h1 {
     border: 1px solid #e5e7eb;
     padding: 8px;
     text-align: left;
+}
+
+/* Import Result */
+.import-result {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
 /* Modal */
@@ -522,6 +647,90 @@ header h1 {
     text-align: center;
     padding: 40px;
     color: #9ca3af;
+}
+
+/* Transaction bank badge */
+.transaction-bank-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #d1fae5;
+    color: #065f46;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+/* Bank styling updates */
+.bank-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.bank-item:last-child {
+    border-bottom: none;
+}
+
+.bank-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.bank-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.bank-name::before {
+    content: '🏦';
+    font-size: 0.9rem;
+}
+
+.bank-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bank-item.archived {
+    opacity: 0.65;
+}
+
+.bank-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.bank-badge.default {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.bank-badge.archived {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.settings-hint {
+    margin-top: 10px;
+    font-size: 0.88rem;
+    color: #6b7280;
+}
+
+/* Transaction form bank select highlight */
+#transactionBank {
+    border: 1.5px solid #10b981;
+    background: #f0fdf4;
 }
 
 /* Responsive */

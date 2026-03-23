@@ -17,13 +17,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Stat">
 
-<meta name="theme-color" content="#10b981">
 </head>
 <body>
     <div class="app-container">
         <!-- Header -->
         <header>
-            <h1>📊 Stat</h1>
             <div class="mode-switch">
                 <button class="mode-btn active" data-mode="personal">
                     🏠 Personal
@@ -31,6 +29,13 @@
                 <button class="mode-btn" data-mode="business">
                     💼 Business
                 </button>
+            </div>
+
+            <div class="bank-switch">
+                <label for="bankSelect">🏦 Bank</label>
+                <select id="bankSelect">
+                    <option value="all">All Banks</option>
+                </select>
             </div>
         </header>
 
@@ -76,12 +81,15 @@
                         <option value="all">All</option>
                     </select>
                 </div>
+                <div class="filter-group">
+                    <label>🔎 Search</label>
+                    <input type="text" id="filterSearch" placeholder="Search description, category, amount">
+                </div>
                 <button id="clearFilters" class="btn-secondary">🗑️ Clear Filters</button>
             </div>
 
             <div class="actions">
                 <button id="addTransactionBtn" class="btn-primary">➕ Add Transaction</button>
-                <button id="exportJsonBtn" class="btn-secondary">💾 Export JSON</button>
             </div>
 
             <div class="transactions-list" id="transactionsList">
@@ -116,11 +124,28 @@
                     <div class="stats-filters swipe-years" id="statsSwipeArea">
                         <button id="prevYearBtn" class="btn-secondary" type="button">←</button>
                         <select id="statsYear"></select>
-                        <button id="refreshStats" class="btn-primary">Refresh</button>
                         <button id="nextYearBtn" class="btn-secondary" type="button">→</button>
                     </div>
 
                     <div id="statsContent">
+                        <div class="overview-cards" id="overviewCards">
+                            <div class="overview-card">
+                                <span class="overview-label">This Month</span>
+                                <strong class="overview-value" id="overviewThisMonth">€0.00</strong>
+                            </div>
+                            <div class="overview-card">
+                                <span class="overview-label">Last Month</span>
+                                <strong class="overview-value" id="overviewLastMonth">€0.00</strong>
+                            </div>
+                            <div class="overview-card">
+                                <span class="overview-label">Selected Year</span>
+                                <strong class="overview-value" id="overviewSelectedYear">€0.00</strong>
+                            </div>
+                            <div class="overview-card">
+                                <span class="overview-label">Transactions</span>
+                                <strong class="overview-value" id="overviewTxCount">0</strong>
+                            </div>
+                        </div>
                         <div class="stats-cards" id="monthlyStats"></div>
                         <div class="category-stats" id="categoryStats"></div>
                     </div>
@@ -135,37 +160,54 @@
                 <p>Supported formats: CSV, Excel (.xlsx, .xls)</p>
                 <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
                 <button id="importBtn" class="btn-primary" disabled>Import</button>
+                <div id="importInfo" class="import-info">
+                Select a file and make sure a specific bank is selected before importing.
+               </div>
                 <div id="importPreview" class="import-preview"></div>
+                <div id="importResult" class="import-result" style="display:none;"></div>
             </div>
         </div>
 
         <!-- Settings Tab -->
-        <div id="settingsTab" class="tab-content">
-            <div class="settings-section">
-                <h3>💾 Data Management</h3>
-                <button id="backupBtn" class="btn-secondary">📀 Full Backup (JSON)</button>
-                <button id="restoreBtn" class="btn-secondary">🔄 Restore from Backup</button>
-                <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
-                <button id="clearAllDataBtn" class="btn-danger">⚠️ Delete All Data</button>
-            </div>
-            <div class="settings-section">
-                <h3>🏷️ Categories</h3>
-                <div id="categoriesList"></div>
-                <div class="add-category">
-                    <input type="text" id="newCategoryName" placeholder="New category name">
-                    <select id="newCategoryType">
-                        <option value="income">Income</option>
-                        <option value="expense">Expense</option>
-                    </select>
-                    <button id="addCategoryBtn" class="btn-primary">➕ Add</button>
-                </div>
-            </div>
-            <div class="settings-section">
-                <h3>ℹ️ About</h3>
-                <p>Version: 1.0.0</p>
-                <p>All data is stored locally on your device</p>
-            </div>
+<div id="settingsTab" class="tab-content">
+    <div class="settings-section">
+        <h3>💾 Data Management</h3>
+        <button id="backupBtn" class="btn-secondary">📀 Backup (JSON)</button>
+        <button id="restoreBtn" class="btn-secondary">🔄 Restore from Backup</button>
+        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+        <button id="clearAllDataBtn" class="btn-danger">⚠️ Delete All Data</button>
+    </div>
+    <div class="settings-section">
+        <h3>🏦 Banks</h3>
+        <div id="banksList"></div>
+
+        <div class="add-bank">
+            <input type="text" id="newBankName" placeholder="Bank name">
+            <button id="addBankBtn" class="btn-primary">➕ Add Bank</button>
         </div>
+
+        <p class="settings-hint">
+            You can rename banks, archive old ones, and set one as default.
+        </p>
+    </div>
+    <div class="settings-section">
+        <h3>🏷️ Categories</h3>
+        <div id="categoriesList"></div>
+        <div class="add-category">
+            <input type="text" id="newCategoryName" placeholder="New category name">
+            <select id="newCategoryType">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <button id="addCategoryBtn" class="btn-primary">➕ Add</button>
+        </div>
+    </div>
+    <div class="settings-section">
+        <h3>ℹ️ About</h3>
+        <p>Version: 1.1.0</p>
+        <p>All data is stored locally on your device</p>
+    </div>
+</div>
 
         <!-- Add/Edit Transaction Modal -->
         <div id="transactionModal" class="modal">
@@ -196,6 +238,12 @@
                     <div class="form-group">
                         <label>Description</label>
                         <textarea id="transactionDescription" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionBank">🏦 Bank *</label>
+                        <select id="transactionBank" required>
+                            <option value="">— Select bank —</option>
+                        </select>
                     </div>
                     <div class="form-buttons">
                         <button type="submit" class="btn-primary">Save</button>

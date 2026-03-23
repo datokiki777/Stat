@@ -298,7 +298,8 @@ function detectCategory(description, type) {
 }
 
 // Map imported row (supports Revolut and standard CSV formats)
-function mapImportedRow(row) {
+// Map imported row (supports Revolut and standard CSV formats)
+function mapImportedRow(row, forcedAccountType = null) {
     const keys = Object.keys(row).reduce((acc, key) => {
         acc[key.toLowerCase().trim()] = row[key];
         return acc;
@@ -340,7 +341,7 @@ function mapImportedRow(row) {
         amount,
         category: detectCategory(description, type),
         description,
-        accountType: currentMode
+        accountType: forcedAccountType !== null ? forcedAccountType : currentMode
     };
 }
 
@@ -350,24 +351,44 @@ function importCSV(file) {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
+            console.log('📄 CSV parsed rows:', results.data.length);
+            if (results.data.length > 0) {
+                console.log('📋 CSV headers:', Object.keys(results.data[0]));
+                console.log('📋 CSV sample row:', results.data[0]);
+            }
+
             const transactions = results.data
-                .map(mapImportedRow)
+                .map(row => mapImportedRow(row, currentMode))
                 .filter(t => t.date && !isNaN(t.amount) && t.amount > 0);
-            
+
+            console.log('✅ Mapped transactions:', transactions.length);
+            if (transactions.length > 0) {
+                console.log('✅ Sample mapped:', transactions[0]);
+            }
+
+            if (transactions.length === 0) {
+                alert('No valid transactions found in file. Make sure file has columns: date, amount (and optional: type, category, description)');
+                return;
+            }
+
             for (const t of transactions) {
                 await addTransaction(t);
             }
-            
+
             await loadTransactions();
             await updateStatsSummary();
             await loadMonthlyStats();
             await loadCategoryStats();
             await populateStatsYears();
-            
-            alert(`Successfully imported ${transactions.length} transactions`);
+
+            alert(`✅ Successfully imported ${transactions.length} transactions`);
             importPreview.innerHTML = '';
             fileInput.value = '';
             importBtn.disabled = true;
+        },
+        error: (error) => {
+            console.error('❌ CSV parse error:', error);
+            alert('Error parsing CSV: ' + error.message);
         }
     });
 }
@@ -375,29 +396,50 @@ function importCSV(file) {
 function importExcel(file) {
     const reader = new FileReader();
     reader.onload = async (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(firstSheet);
-        
-        const transactions = rows
-            .map(mapImportedRow)
-            .filter(t => t.date && !isNaN(t.amount) && t.amount > 0);
-        
-        for (const t of transactions) {
-            await addTransaction(t);
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+            console.log('📄 Excel parsed rows:', rows.length);
+            if (rows.length > 0) {
+                console.log('📋 Excel headers:', Object.keys(rows[0]));
+                console.log('📋 Excel sample row:', rows[0]);
+            }
+
+            const transactions = rows
+                .map(row => mapImportedRow(row, currentMode))
+                .filter(t => t.date && !isNaN(t.amount) && t.amount > 0);
+
+            console.log('✅ Mapped transactions:', transactions.length);
+            if (transactions.length > 0) {
+                console.log('✅ Sample mapped:', transactions[0]);
+            }
+
+            if (transactions.length === 0) {
+                alert('No valid transactions found in file. Make sure file has columns: date, amount (and optional: type, category, description)');
+                return;
+            }
+
+            for (const t of transactions) {
+                await addTransaction(t);
+            }
+
+            await loadTransactions();
+            await updateStatsSummary();
+            await loadMonthlyStats();
+            await loadCategoryStats();
+            await populateStatsYears();
+
+            alert(`✅ Successfully imported ${transactions.length} transactions`);
+            importPreview.innerHTML = '';
+            fileInput.value = '';
+            importBtn.disabled = true;
+        } catch (error) {
+            console.error('❌ Excel parse error:', error);
+            alert('Error parsing Excel file: ' + error.message);
         }
-        
-        await loadTransactions();
-        await updateStatsSummary();
-        await loadMonthlyStats();
-        await loadCategoryStats();
-        await populateStatsYears();
-        
-        alert(`Successfully imported ${transactions.length} transactions`);
-        importPreview.innerHTML = '';
-        fileInput.value = '';
-        importBtn.disabled = true;
     };
     reader.readAsArrayBuffer(file);
 }
@@ -437,7 +479,14 @@ function displayPreview(rows) {
 
     const headers = Object.keys(rows[0]);
 
+    // Add header info
     importPreview.innerHTML = `
+        <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <strong>📋 Detected columns:</strong> ${headers.join(', ')}
+        </div>
+    `;
+
+    importPreview.innerHTML += `
         <h4>Preview (first 5 records):</h4>
         <table class="preview-table">
             <thead>
@@ -454,9 +503,10 @@ function displayPreview(rows) {
             </tbody>
         </table>
         <p><strong>ℹ️ Info:</strong> Stat supports standard CSV and Revolut-like CSV files</p>
+        <p><strong>📌 Required columns:</strong> date, amount (or "Paid In"/"Paid Out" for Revolut)</p>
     `;
 
-    const sample = rows.slice(0, 2).map(mapImportedRow);
+    const sample = rows.slice(0, 2).map(row => mapImportedRow(row, currentMode));
 
     if (sample.length > 0 && sample[0].date) {
         importPreview.innerHTML += `
@@ -499,6 +549,10 @@ async function exportToJSON() {
 
 // Setup event listeners
 function setupEventListeners() {
+    // Debug: check if import elements exist
+    console.log('Import button element:', importBtn);
+    console.log('File input element:', fileInput);
+
     // Mode switch
     modeBtns.forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -671,17 +725,27 @@ function setupEventListeners() {
     // File import
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
+        console.log('File selected:', file ? file.name : 'none');
         if (file) {
             previewFile(file);
             importBtn.disabled = false;
+            console.log('Import button enabled');
+        } else {
+            importBtn.disabled = true;
+            console.log('Import button disabled');
         }
     });
-    
+
     importBtn.addEventListener('click', () => {
         const file = fileInput.files[0];
-        if (!file) return;
-        
+        console.log('Import button clicked, file:', file ? file.name : 'none');
+        if (!file) {
+            alert('Please select a file first');
+            return;
+        }
+
         const ext = file.name.split('.').pop().toLowerCase();
+        console.log('File extension:', ext);
         if (ext === 'csv') {
             importCSV(file);
         } else if (ext === 'xlsx' || ext === 'xls') {

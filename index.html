@@ -36,11 +36,11 @@
 
         <!-- Navigation -->
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="transactions">
-                📋 Transactions
-            </button>
-            <button class="tab-btn" data-tab="stats">
+            <button class="tab-btn active" data-tab="stats">
                 📊 Statistics
+            </button>
+            <button class="tab-btn" data-tab="transactions">
+                📋 Transactions
             </button>
             <button class="tab-btn" data-tab="import">
                 📁 Import
@@ -51,23 +51,8 @@
         </nav>
 
         <!-- Stats Summary Bar (shown on all tabs) -->
-        <div class="stats-summary" id="statsSummary">
-            <div class="stat-card">
-                <span class="stat-label">Balance</span>
-                <span class="stat-value" id="balanceAmount">€0.00</span>
-            </div>
-            <div class="stat-card income">
-                <span class="stat-label">Income</span>
-                <span class="stat-value" id="incomeAmount">€0.00</span>
-            </div>
-            <div class="stat-card expense">
-                <span class="stat-label">Expense</span>
-                <span class="stat-value" id="expenseAmount">€0.00</span>
-            </div>
-        </div>
-
         <!-- Transactions Tab -->
-        <div id="transactionsTab" class="tab-content active">
+        <div id="transactionsTab" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
                     <label>📅 From Date</label>
@@ -105,14 +90,41 @@
         </div>
 
         <!-- Stats Tab -->
-        <div id="statsTab" class="tab-content">
-            <div class="stats-filters">
-                <select id="statsYear"></select>
-                <button id="refreshStats" class="btn-primary">Refresh</button>
-            </div>
-            <div id="statsContent">
-                <div class="stats-cards" id="monthlyStats"></div>
-                <div class="category-stats" id="categoryStats"></div>
+        <div id="statsTab" class="tab-content active">
+            <div class="stats-panel" id="statsPanel">
+                <button class="stats-panel-toggle" id="statsPanelToggle" type="button">
+                    <span>📊 Statistics Overview</span>
+                    <span id="statsPanelArrow">▾</span>
+                </button>
+
+                <div class="stats-panel-body" id="statsPanelBody">
+                    <div class="stats-summary" id="statsSummary">
+                        <div class="stat-card">
+                            <span class="stat-label">Balance</span>
+                            <span class="stat-value" id="balanceAmount">€0.00</span>
+                        </div>
+                        <div class="stat-card income">
+                            <span class="stat-label">Income</span>
+                            <span class="stat-value" id="incomeAmount">€0.00</span>
+                        </div>
+                        <div class="stat-card expense">
+                            <span class="stat-label">Expense</span>
+                            <span class="stat-value" id="expenseAmount">€0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-filters swipe-years" id="statsSwipeArea">
+                        <button id="prevYearBtn" class="btn-secondary" type="button">←</button>
+                        <select id="statsYear"></select>
+                        <button id="refreshStats" class="btn-primary">Refresh</button>
+                        <button id="nextYearBtn" class="btn-secondary" type="button">→</button>
+                    </div>
+
+                    <div id="statsContent">
+                        <div class="stats-cards" id="monthlyStats"></div>
+                        <div class="category-stats" id="categoryStats"></div>
+                    </div>
+                </div>
             </div>
         </div>
 

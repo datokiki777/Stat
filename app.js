@@ -9,7 +9,7 @@ function getCurrentCurrency() {
 
 // Global state
 let currentMode = 'personal'; // 'personal' or 'business'
-let currentTab = 'transactions';
+let currentTab = 'stats';
 let currentFilters = {
     dateFrom: '',
     dateTo: '',
@@ -18,6 +18,9 @@ let currentFilters = {
 };
 let categories = { income: [], expense: [] };
 let editingTransaction = null;
+let isStatsPanelCollapsed = false;
+let touchStartX = 0;
+let touchEndX = 0;
 
 // DOM Elements
 const modeBtns = document.querySelectorAll('.mode-btn');
@@ -42,6 +45,13 @@ const statsYear = document.getElementById('statsYear');
 const refreshStatsBtn = document.getElementById('refreshStats');
 const monthlyStatsDiv = document.getElementById('monthlyStats');
 const categoryStatsDiv = document.getElementById('categoryStats');
+const statsPanel = document.getElementById('statsPanel');
+const statsPanelToggle = document.getElementById('statsPanelToggle');
+const statsPanelBody = document.getElementById('statsPanelBody');
+const statsPanelArrow = document.getElementById('statsPanelArrow');
+const prevYearBtn = document.getElementById('prevYearBtn');
+const nextYearBtn = document.getElementById('nextYearBtn');
+const statsSwipeArea = document.getElementById('statsSwipeArea');
 const addCategoryBtn = document.getElementById('addCategoryBtn');
 const newCategoryName = document.getElementById('newCategoryName');
 const newCategoryType = document.getElementById('newCategoryType');
@@ -77,6 +87,51 @@ async function populateStatsYears() {
     statsYear.value = currentYear;
 }
 
+function updateStatsPanelState() {
+    statsPanelBody.style.display = isStatsPanelCollapsed ? 'none' : 'block';
+    statsPanelArrow.textContent = isStatsPanelCollapsed ? '▸' : '▾';
+    statsPanel.classList.toggle('collapsed', isStatsPanelCollapsed);
+}
+
+function toggleStatsPanel() {
+    isStatsPanelCollapsed = !isStatsPanelCollapsed;
+    updateStatsPanelState();
+}
+
+async function changeStatsYear(step) {
+    const options = [...statsYear.options].map(o => o.value);
+    const currentIndex = options.indexOf(statsYear.value);
+    if (currentIndex === -1) return;
+
+    const nextIndex = currentIndex + step;
+    if (nextIndex < 0 || nextIndex >= options.length) return;
+
+    statsYear.value = options[nextIndex];
+    await loadMonthlyStats();
+    await loadCategoryStats();
+}
+
+function setupStatsSwipe() {
+    if (!statsSwipeArea) return;
+
+    statsSwipeArea.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    statsSwipeArea.addEventListener('touchend', async (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) < 40) return;
+
+        if (diff < 0) {
+            await changeStatsYear(-1); // swipe left
+        } else {
+            await changeStatsYear(1); // swipe right
+        }
+    }, { passive: true });
+}
+
 // Initialize app
 async function init() {
     // Open database and init categories
@@ -104,6 +159,8 @@ async function init() {
     
     // Setup event listeners
     setupEventListeners();
+    updateStatsPanelState();
+    setupStatsSwipe();
 }
 
 // Load categories
@@ -187,7 +244,8 @@ function editTransaction(transaction) {
 
 // Update stats summary (balance, income, expense)
 async function updateStatsSummary() {
-    const stats = await getStats(currentMode, null);
+    const selectedYear = statsYear?.value || null;
+    const stats = await getStats(currentMode, selectedYear);
     document.getElementById('balanceAmount').textContent = formatAmount(stats.balance);
     document.getElementById('incomeAmount').textContent = formatAmount(stats.income);
     document.getElementById('expenseAmount').textContent = formatAmount(stats.expense);
@@ -197,27 +255,70 @@ async function updateStatsSummary() {
 async function loadMonthlyStats() {
     const year = statsYear.value;
     const monthlyStats = await getMonthlyStats(currentMode, year);
-    
-    monthlyStatsDiv.innerHTML = monthlyStats.map(m => `
-        <div class="month-card">
-            <div class="month-name">${getMonthName(m.month)}</div>
-            <div class="month-income">📈 Income: ${formatAmount(m.income)}</div>
-            <div class="month-expense">📉 Expense: ${formatAmount(m.expense)}</div>
-            <div class="month-balance">💰 Balance: ${formatAmount(m.balance)}</div>
-        </div>
-    `).join('');
+
+    monthlyStatsDiv.innerHTML = monthlyStats.map(m => {
+        const avgTransaction = m.total ? (m.income + m.expense) / m.total : 0;
+        const savingsRate = m.income > 0 ? ((m.balance / m.income) * 100) : 0;
+        const statusText = m.balance > 0 ? 'Positive' : m.balance < 0 ? 'Negative' : 'Neutral';
+
+        return `
+            <div class="month-card">
+                <button class="month-card-toggle" type="button">
+                    <div class="month-card-head">
+                        <div class="month-name">${getMonthName(m.month)}</div>
+                        <div class="month-balance-inline">${formatAmount(m.balance)}</div>
+                    </div>
+
+                    <div class="month-summary-lines">
+                        <div class="month-income">📈 Income: ${formatAmount(m.income)}</div>
+                        <div class="month-expense">📉 Expense: ${formatAmount(m.expense)}</div>
+                        <div class="month-balance">💰 Balance: ${formatAmount(m.balance)}</div>
+                    </div>
+
+                    <span class="month-arrow">▾</span>
+                </button>
+
+                <div class="month-card-details">
+                    <div class="month-detail-row">
+                        <span>Transactions</span>
+                        <strong>${m.total}</strong>
+                    </div>
+                    <div class="month-detail-row">
+                        <span>Average transaction</span>
+                        <strong>${formatAmount(avgTransaction)}</strong>
+                    </div>
+                    <div class="month-detail-row">
+                        <span>Savings rate</span>
+                        <strong>${savingsRate.toFixed(1)}%</strong>
+                    </div>
+                    <div class="month-detail-row">
+                        <span>Status</span>
+                        <strong>${statusText}</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.querySelectorAll('.month-card-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const card = btn.closest('.month-card');
+            card.classList.toggle('open');
+        });
+    });
 }
 
 // Load category stats
 async function loadCategoryStats() {
-    const stats = await getStats(currentMode, null);
+    const selectedYear = statsYear?.value || null;
+    const stats = await getStats(currentMode, selectedYear);
     const categories = Object.entries(stats.categoryBreakdown);
-    
+
     if (categories.length === 0) {
         categoryStatsDiv.innerHTML = '<div class="empty-state">No data available</div>';
         return;
     }
-    
+
     categoryStatsDiv.innerHTML = `
         <h3>📊 By Category</h3>
         ${categories.map(([cat, data]) => `
@@ -757,9 +858,35 @@ function setupEventListeners() {
     
     // Stats refresh
     refreshStatsBtn.addEventListener('click', async () => {
+        await updateStatsSummary();
         await loadMonthlyStats();
         await loadCategoryStats();
     });
+
+    // Stats year dropdown change
+    statsYear.addEventListener('change', async () => {
+        await updateStatsSummary();
+        await loadMonthlyStats();
+        await loadCategoryStats();
+    });
+
+    // Stats panel toggle
+    if (statsPanelToggle) {
+        statsPanelToggle.addEventListener('click', toggleStatsPanel);
+    }
+
+    // Year navigation buttons
+    if (prevYearBtn) {
+        prevYearBtn.addEventListener('click', async () => {
+            await changeStatsYear(1);
+        });
+    }
+
+    if (nextYearBtn) {
+        nextYearBtn.addEventListener('click', async () => {
+            await changeStatsYear(-1);
+        });
+    }
     
     // Add category
     addCategoryBtn.addEventListener('click', async () => {
